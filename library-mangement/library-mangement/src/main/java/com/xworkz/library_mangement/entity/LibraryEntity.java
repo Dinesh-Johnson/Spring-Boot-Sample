@@ -24,4 +24,7 @@ public class LibraryEntity {
 
     @Column(name = "genre")
     private String genre;
+
+    @Column(name = "book_code")
+    private String bookCode;
 }

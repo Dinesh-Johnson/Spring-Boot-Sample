@@ -1,38 +1,33 @@
 package com.xworkz.library_mangement.service;
 
-import com.xworkz.library_mangement.LibraryMangementApplication;
-import com.xworkz.library_mangement.entity.LibraryEntity;
+import com.xworkz.library_mangement.dto.LibraryDTO;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface LibraryService {
 
-    LibraryEntity save(LibraryEntity entity);
-
+    LibraryDTO save(LibraryDTO dto);
 
     void deleteById(Integer id);
 
-    Iterable<LibraryEntity> saveAll(Iterable<LibraryEntity> entities);
+    List<LibraryDTO> saveAll(List<LibraryDTO> dtoList);
 
-    Optional<LibraryEntity> findById(Integer id);
+    Optional<LibraryDTO> findById(Integer id);
 
     Long count();
 
-    List<LibraryEntity> findAllByBookName(String name);
+    List<LibraryDTO> findAllByBookName(String name);
 
-    Iterable<LibraryEntity> findAll();
+    List<LibraryDTO> findAll();
 
     Boolean existsById(Integer id);
 
-    List<LibraryEntity> findAllByAuthorName(String authorName);
+    List<LibraryDTO> findAllByAuthorName(String authorName);
 
-    List<LibraryEntity> findAllByBookNameContaining(String keyword);
+    List<LibraryDTO> findAllByBookNameContaining(String keyword);
 
     void deleteByGenre(String genre);
 
-    List<LibraryEntity> findAllByGenre(String genre);
-
-
-
+    List<LibraryDTO> findAllByGenre(String genre);
 }

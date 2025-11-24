@@ -1,131 +1,178 @@
 package com.xworkz.library_mangement.restcontroller;
 
-import com.xworkz.library_mangement.entity.LibraryEntity;
+import com.xworkz.library_mangement.dto.LibraryDTO;
 import com.xworkz.library_mangement.service.LibraryService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
 @RequestMapping("/library")
 public class LibraryRestController {
 
-
     private final LibraryService service;
 
     public LibraryRestController(LibraryService service) {
         this.service = service;
-        log.info("Library Rest controller Constructor");
+        log.info("Library Rest Controller Constructor");
     }
 
+    // CREATE
     @PostMapping
-    public Object create(@Valid @RequestBody LibraryEntity entity, BindingResult result){
-        log.info("Book : {}",entity);
+    public ResponseEntity<?> create(@Valid @RequestBody LibraryDTO dto,
+                                    BindingResult result) {
+
         if (result.hasErrors()) {
-            return result.getFieldErrors()
-                    .stream()
-                    .map(e -> e.getField() + " : " + e.getDefaultMessage())
-                    .toList();
+            return ResponseEntity.badRequest().body(
+                    result.getFieldErrors().stream()
+                            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                            .toList()
+            );
         }
-        return service.save(entity);
+
+        try {
+            LibraryDTO saved = service.save(dto);
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating book: " + e.getMessage());
+        }
     }
 
+    // UPDATE
     @PutMapping("/{id}")
-    public Object update(@Valid @PathVariable Integer id,
-                                @RequestBody LibraryEntity entity,BindingResult result){
+    public ResponseEntity<?> update(@PathVariable Integer id,
+                                    @Valid @RequestBody LibraryDTO dto,
+                                    BindingResult result) {
+
         if (result.hasErrors()) {
-            return result.getFieldErrors()
-                    .stream()
-                    .map(e -> e.getField() + " : " + e.getDefaultMessage())
-                    .toList();
+            return ResponseEntity.badRequest().body(
+                    result.getFieldErrors().stream()
+                            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                            .collect(Collectors.toList())
+            );
         }
-        entity.setId(id);
-        return service.save(entity);
+
+        if (!service.existsById(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Book with ID " + id + " not found");
+        }
+
+        try {
+            dto.setId(id);
+            LibraryDTO updated = service.save(dto);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating book: " + e.getMessage());
+        }
     }
 
+    // GET BY ID
     @GetMapping("/{id}")
-    public Object getById(@PathVariable Integer id) {
-        log.info("Fetching book with ID {}", id);
-        return service.findById(id);
+    public ResponseEntity<?> getById(@PathVariable Integer id) {
+
+        Optional<LibraryDTO> book = service.findById(id);
+
+        return book
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .orElseGet(() ->
+                        ResponseEntity.status(HttpStatus.NOT_FOUND)
+                                .body("Book with ID " + id + " not found")
+                );
     }
 
+    // DELETE BY ID
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Integer id) {
-        log.info("Deleting book {}", id);
-        service.deleteById(id);
-        return "Deleted book with id " + id;
-    }
+    public ResponseEntity<?> delete(@PathVariable Integer id) {
 
-    @PostMapping("/books")
-    public Object bulkCreate(@Valid @RequestBody Iterable<LibraryEntity> entities,
-                             BindingResult result) {
-
-        log.info("Bulk create books");
-
-        if (result.hasErrors()) {
-            return result.getFieldErrors()
-                    .stream()
-                    .map(e -> e.getField() + " : " + e.getDefaultMessage())
-                    .toList();
+        if (!service.existsById(id)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Book with ID " + id + " not found");
         }
 
-        return service.saveAll(entities);
+        service.deleteById(id);
+        return ResponseEntity.ok("Deleted book with id " + id);
     }
 
+    // BULK CREATE
+    @PostMapping("/books")
+    public ResponseEntity<?> bulkCreate(@Valid @RequestBody List<LibraryDTO> dtoList,
+                                        BindingResult result) {
+
+        if (result.hasErrors()) {
+            return ResponseEntity.badRequest().body(
+                    result.getFieldErrors().stream()
+                            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+                            .toList()
+            );
+        }
+
+        try {
+            return ResponseEntity.ok(service.saveAll(dtoList));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Bulk create failed: " + e.getMessage());
+        }
+    }
+
+    // GET ALL
     @GetMapping
-    public Object getAll() {
-        log.info("Fetching all books");
-        return service.findAll(); // You must add this method in service + repo
+    public ResponseEntity<?> getAll() {
+        return ResponseEntity.ok(service.findAll());
     }
 
+    // BULK UPDATE
     @PutMapping("/books")
-    public Object bulkUpdate(@RequestBody Iterable<LibraryEntity> entities) {
-
-        log.info("Bulk updating books");
-
-        return service.saveAll(entities);
+    public ResponseEntity<?> bulkUpdate(@RequestBody List<LibraryDTO> dtoList) {
+        return ResponseEntity.ok(service.saveAll(dtoList));
     }
 
+    // BULK DELETE
     @DeleteMapping("/books")
-    public String bulkDelete(@RequestBody Iterable<Integer> ids) {
-
-        log.info("Bulk delete books");
+    public ResponseEntity<?> bulkDelete(@RequestBody List<Integer> ids) {
 
         ids.forEach(service::deleteById);
 
-        return "Deleted books: " + ids;
+        return ResponseEntity.ok("Deleted books: " + ids);
     }
 
+    // GET BOOKS BY NAME
     @GetMapping("/book/{name}")
-    public Object getByBookName(@PathVariable String name) {
-        log.info("Searching books by name: {}", name);
-        return service.findAllByBookName(name);
+    public ResponseEntity<?> getByBookName(@PathVariable String name) {
+        return ResponseEntity.ok(service.findAllByBookName(name));
     }
 
+    // GET BOOKS BY AUTHOR
     @GetMapping("/author/{authorName}")
-    public Object getByAuthorName(@PathVariable String authorName) {
-        log.info("Searching books by author: {}", authorName);
-        return service.findAllByAuthorName(authorName);
+    public ResponseEntity<?> getByAuthorName(@PathVariable String authorName) {
+        return ResponseEntity.ok(service.findAllByAuthorName(authorName));
     }
 
+    // SEARCH KEYWORD
     @GetMapping("/search/{keyword}")
-    public Object searchByKeyword(@PathVariable String keyword) {
-        log.info("Searching books by keyword: {}", keyword);
-        return service.findAllByBookNameContaining(keyword);
+    public ResponseEntity<?> searchByKeyword(@PathVariable String keyword) {
+        return ResponseEntity.ok(service.findAllByBookNameContaining(keyword));
     }
 
+    // DELETE BY GENRE
     @DeleteMapping("/genre/{genre}")
-    public String deleteByGenre(@PathVariable String genre) {
-        log.info("Deleting all books in genre: {}", genre);
+    public ResponseEntity<?> deleteByGenre(@PathVariable String genre) {
         service.deleteByGenre(genre);
-        return "Deleted all books of genre: " + genre;
+        return ResponseEntity.ok("Deleted all books of genre: " + genre);
     }
 
+    // GET BY GENRE
     @GetMapping("/genre/{genre}")
-    public Object getByGenre(@PathVariable String genre) {
-        log.info("Searching books by genre: {}", genre);
-        return service.findAllByGenre(genre);
+    public ResponseEntity<?> getByGenre(@PathVariable String genre) {
+        return ResponseEntity.ok(service.findAllByGenre(genre));
     }
 }

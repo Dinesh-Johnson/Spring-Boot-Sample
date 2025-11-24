@@ -1,13 +1,16 @@
 package com.xworkz.library_mangement.service;
 
+import com.xworkz.library_mangement.dto.LibraryDTO;
 import com.xworkz.library_mangement.entity.LibraryEntity;
 import com.xworkz.library_mangement.repository.LibraryRepo;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -16,83 +19,165 @@ public class LibraryServiceImpl implements LibraryService{
     @Autowired
     private LibraryRepo repo;
 
-    @Override
-    public LibraryEntity save   (LibraryEntity entity) {
-        log.info("Saved Book : {}",entity);
-        return repo.save(entity);
+    // Convert DTO -> Entity
+    private LibraryEntity toEntity(LibraryDTO dto) {
+        LibraryEntity entity = new LibraryEntity();
+        BeanUtils.copyProperties(dto, entity);
+        return entity;
     }
 
-//    @Override
-//    public LibraryEntity update(LibraryEntity updateEntity) {
-//
-//        if (repo.existsById(updateEntity.getId())) {
-//            log.info("Updating Entity : {}", updateEntity);
-//            return repo.save(updateEntity);   // safe update
-//        }
-//
-//        throw new IllegalArgumentException("Book ID not found: " + updateEntity.getId());
-//    }
-
-    @Override
-    public Optional<LibraryEntity> findById(Integer id) {
-        log.info("id :{} found",id);
-        return repo.findById(id);
+    // Convert Entity -> Dto
+    private LibraryDTO toDTO(LibraryEntity entity) {
+        LibraryDTO dto = new LibraryDTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
     }
 
+    @Override
+    public LibraryDTO save(LibraryDTO dto) {
+        log.debug("Saving book: {}", dto.getBookName());
+        try {
+            LibraryEntity entity = toEntity(dto);
+            LibraryEntity saved = repo.save(entity);
+            log.info("Successfully saved book with ID: {}", saved.getId());
+            return toDTO(saved);
+        } catch (Exception e) {
+            log.error("Error occurred while saving book: {}", dto.getBookName(), e);
+            throw e;
+        }
+    }
+
+    
+    // Save All (DTO List)
+    @Override
+    public List<LibraryDTO> saveAll(List<LibraryDTO> dtoList) {
+
+        List<LibraryEntity> entities =
+                dtoList.stream()
+                        .map(this::toEntity)
+                        .collect(Collectors.toList());
+
+        List<LibraryEntity> savedEntities = repo.saveAll(entities);
+
+        return savedEntities.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    
+    // Delete By ID
+    
     @Override
     public void deleteById(Integer id) {
-        log.info("id :{} deleted",id);
-        repo.deleteById(id);
+        log.info("Deleting book with ID: {}", id);
+        try {
+            repo.deleteById(id);
+            log.info("Successfully deleted book with ID: {}", id);
+        } catch (Exception e) {
+            log.error("Error deleting book with ID: {}", id, e);
+            throw e;
+        }
     }
 
+    
+    // Find By ID
+    
     @Override
-    public Iterable<LibraryEntity> saveAll(Iterable<LibraryEntity> entities) {
-        log.info("Saved Bulk : {}",entities);
-        return repo.saveAll(entities);
+    public Optional<LibraryDTO> findById(Integer id) {
+        log.debug("Fetching book with ID: {}", id);
+        try {
+            Optional<LibraryEntity> entityOpt = repo.findById(id);
+            if (entityOpt.isPresent()) {
+                log.debug("Found book with ID: {}", id);
+            } else {
+                log.warn("No book found with ID: {}", id);
+            }
+            return entityOpt.map(this::toDTO);
+        } catch (Exception e) {
+            log.error("Error fetching book with ID: {}", id, e);
+            throw e;
+        }
     }
 
+    
+    // Count
+    
     @Override
-    public Long count(){
-        log.info("Service Count Method");
+    public Long count() {
         return repo.count();
     }
 
+    
+    // Find All By Book Name
+    
     @Override
-    public List<LibraryEntity> findAllByBookName(String name) {
-        log.info("Name : {}",name);
-        return repo.findAllByBookName(name);
+    public List<LibraryDTO> findAllByBookName(String name) {
+        return repo.findAllByBookName(name)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
+    
+    // Find All
     @Override
-    public Iterable<LibraryEntity> findAll() {
-        log.info("Find All Methods");
-        return repo.findAll();
+    public List<LibraryDTO> findAll() {
+        log.debug("Fetching all books");
+        try {
+            List<LibraryDTO> books = repo.findAll()
+                    .stream()
+                    .map(this::toDTO)
+                    .collect(Collectors.toList());
+            log.debug("Found {} books", books.size());
+            return books;
+        } catch (Exception e) {
+            log.error("Error fetching all books", e);
+            throw e;
+        }
     }
 
+    
+    // Exists By ID
     @Override
     public Boolean existsById(Integer id) {
-        log.info("Exists ID {}",id);
         return repo.existsById(id);
     }
 
+    
+    // Find All By Author Name
     @Override
-    public List<LibraryEntity> findAllByAuthorName(String authorName) {
-        return repo.findAllByAuthorName(authorName);
+    public List<LibraryDTO> findAllByAuthorName(String authorName) {
+        return repo.findAllByAuthorName(authorName)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
+    
+    // Search by keyword in book name
+    
     @Override
-    public List<LibraryEntity> findAllByBookNameContaining(String keyword) {
-        return repo.findAllByBookNameContaining(keyword);
+    public List<LibraryDTO> findAllByBookNameContaining(String keyword) {
+        return repo.findAllByBookNameContaining(keyword)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
+    
+    // Delete by Genre
     @Override
     public void deleteByGenre(String genre) {
         repo.deleteByGenre(genre);
     }
 
+    // Find All By Genre
     @Override
-    public List<LibraryEntity> findAllByGenre(String genre) {
-        return repo.findAllByGenre(genre);
+    public List<LibraryDTO> findAllByGenre(String genre) {
+        return repo.findAllByGenre(genre)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
 }
