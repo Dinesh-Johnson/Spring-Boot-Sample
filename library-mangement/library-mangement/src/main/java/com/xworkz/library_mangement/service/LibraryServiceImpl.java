@@ -6,11 +6,15 @@ import com.xworkz.library_mangement.repository.LibraryRepo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 @Service
 @Slf4j
@@ -171,13 +175,20 @@ public class LibraryServiceImpl implements LibraryService{
         repo.deleteByGenre(genre);
     }
 
-    // Find All By Genre
     @Override
-    public List<LibraryDTO> findAllByGenre(String genre) {
-        return repo.findAllByGenre(genre)
-                .stream()
-                .map(this::toDTO)
-                .collect(Collectors.toList());
+    public Page<LibraryDTO> getPaginated(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<LibraryEntity> entityPage = repo.findAll(pageable);
+
+        return entityPage.map(this::toDTO);
     }
+
+    @Override
+    public Page<LibraryDTO> findAllByGenre(String genre, Pageable pageable) {
+        return repo.findAllByGenre(genre, pageable)
+                .map(this::toDTO);
+    }
+
 
 }

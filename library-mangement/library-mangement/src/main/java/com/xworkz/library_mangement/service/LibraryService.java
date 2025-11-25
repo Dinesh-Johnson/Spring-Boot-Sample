@@ -1,7 +1,9 @@
 package com.xworkz.library_mangement.service;
 
 import com.xworkz.library_mangement.dto.LibraryDTO;
-
+import com.xworkz.library_mangement.entity.LibraryEntity;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Page;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,5 +31,10 @@ public interface LibraryService {
 
     void deleteByGenre(String genre);
 
-    List<LibraryDTO> findAllByGenre(String genre);
+
+
+    Page<LibraryDTO> getPaginated(int page, int size);
+
+    Page<LibraryDTO> findAllByGenre(String genre, Pageable pageable);
+
 }

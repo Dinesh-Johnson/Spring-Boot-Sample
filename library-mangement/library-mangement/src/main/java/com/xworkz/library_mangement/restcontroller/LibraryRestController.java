@@ -4,6 +4,8 @@ import com.xworkz.library_mangement.dto.LibraryDTO;
 import com.xworkz.library_mangement.service.LibraryService;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -171,8 +173,24 @@ public class LibraryRestController {
     }
 
     // GET BY GENRE
-    @GetMapping("/genre/{genre}")
-    public ResponseEntity<?> getByGenre(@PathVariable String genre) {
-        return ResponseEntity.ok(service.findAllByGenre(genre));
+    @GetMapping("/genre/page")
+    public ResponseEntity<?> getByGenrePaged(
+            @RequestParam String genre,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(service.findAllByGenre(genre, pageable));
     }
+
+
+    @GetMapping("/page")
+    public ResponseEntity<?> getPaginated(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        return ResponseEntity.ok(service.getPaginated(page, size));
+    }
+
+
 }

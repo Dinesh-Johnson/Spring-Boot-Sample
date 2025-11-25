@@ -1,6 +1,8 @@
 package com.xworkz.library_mangement.repository;
 
 import com.xworkz.library_mangement.entity.LibraryEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,7 +19,11 @@ public interface LibraryRepo extends JpaRepository<LibraryEntity,Integer> {
 
     void deleteByGenre(String genre);
 
-    List<LibraryEntity> findAllByGenre(String genre);
+
+    Page<LibraryEntity> findAll(Pageable pageable);
+
+    Page<LibraryEntity> findAllByGenre(String genre, Pageable pageable);
+
 
 
 }
